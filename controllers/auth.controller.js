@@ -1,13 +1,13 @@
+require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const User = require('../models/user.model')
 const jwt = require('jsonwebtoken');
 const authConfig = require('../configs/auth.config');
 const constants = require('../utils/constants');
+const sendVerificationEmail = require('../utils/sendVerificationEmail')
+
 
 exports.signup = async (req,res)=>{
-    if(req.body.userType != constants.userType.customer){
-        req.body.userStatus = constants.userStatus.pending
-    }
 
     const userObj = {
         name : req.body.name,
@@ -15,11 +15,14 @@ exports.signup = async (req,res)=>{
         email : req.body.email,
         userType : req.body.userType,
         password : bcrypt.hashSync(req.body.password, 8),
-        userStatus : req.body.userStatus
+        userStatus : constants.userStatus.pending
     };
 
     try{
         const userCreated = await User.create(userObj);
+        
+        sendVerificationEmail(userCreated);
+
         const response = {
             name : userCreated.name,
             userId : userCreated.userId,
@@ -29,6 +32,8 @@ exports.signup = async (req,res)=>{
             createdAt : userCreated.createdAt,
             updatedAt : userCreated.updatedAt
         }
+
+
         console.log(`#### ${response.userType} ${response.name} created ####`);
         res.status(201).send(response);
     }catch(err){
@@ -48,6 +53,12 @@ exports.signin = async (req,res)=>{
             });
         }
         
+        if(!user.emailVerified){
+            return res.status(400).send({
+                message : "Failed! user is not verified yet"
+            });
+        }
+
         if(user.userStatus == constants.userStatus.pending){
             return res.status(400).send({
                 message : "User is not yet approved from the admin"
@@ -76,6 +87,25 @@ exports.signin = async (req,res)=>{
         console.log("#### Error while user sign in ##### ", err.message);
         res.status(500).send({
             message : "Internal server error while user signin"
+        });
+    }
+}
+
+exports.verifyUserEmail = async (req,res)=>{
+    try{
+        if(req.user.userType==constants.userType.customer){
+            req.user.userStatus = constants.userStatus.approved;
+        }
+        req.user.emailVerified = true;
+        req.user.save()
+        console.log(`#### ${req.user.userType} ${req.user.name} is verified ####`);
+        res.status(200).send({
+            message : "Email verification successful;"
+        })
+}catch(err){
+        console.log("#### Error while verifying user email ##### ", err.message);
+        res.status(500).send({
+            message : "Internal server error while email verification"
         });
     }
 }

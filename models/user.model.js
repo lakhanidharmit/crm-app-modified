@@ -43,19 +43,11 @@ const userSchema = new mongoose.Schema({
         default : constants.userStatus.approved,
         enum : [constants.userStatus.approved, constants.userStatus.pending, constants.userStatus.rejected]
     },
-    ticketsCreated : {
-        type : [mongoose.SchemaTypes.ObjectId],
-        ref : "Ticket"
-    },
     openTicketsCreated : {
         type : [mongoose.SchemaTypes.ObjectId],
         ref : "Ticket"
     },
     closedTicketsCreated : {
-        type : [mongoose.SchemaTypes.ObjectId],
-        ref : "Ticket"
-    },
-    ticketsAssigned : {
         type : [mongoose.SchemaTypes.ObjectId],
         ref : "Ticket"
     },
@@ -66,6 +58,11 @@ const userSchema = new mongoose.Schema({
     closedTicketsAssigned : {
         type : [mongoose.SchemaTypes.ObjectId],
         ref : "Ticket"
+    },
+    emailVerified : {
+        type : Boolean,
+        required : true,
+        default : false
     }
 });
 

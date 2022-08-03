@@ -27,5 +27,5 @@ require('./routes/user.route')(app);
 require('./routes/ticket.route')(app);
 
 app.listen(serverConfig.PORT,()=>{
-    console.log("#### connected to server #### port no.:", serverConfig.PORT);
+    console.log(`#### connected to server at port no.: ${serverConfig.PORT} ####`);
 })

@@ -20,8 +20,9 @@ module.exports = async ()=>{
                 name : "Dharmit Lakhani",
                 userId : "admin",
                 password : bcrypt.hashSync("itsonlyDharmit#9",8),
-                email : "lakhanidharmit@yahoo.com",
-                userType : constants.userType.admin
+                email : "dharmitmailer+crmadmin@gmail.com",
+                userType : constants.userType.admin,
+                emailVerified : true
             });
             console.log("#### Admin user created ####");
             }

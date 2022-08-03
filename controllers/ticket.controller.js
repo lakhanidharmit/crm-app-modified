@@ -1,6 +1,7 @@
 const User = require('../models/user.model')
 const Ticket = require('../models/ticket.model')
 const constants = require("../utils/constants")
+const sendNotificationReq = require('../utils/notificationClient')
 
 exports.createTicket = async (req,res)=>{
     try{
@@ -8,7 +9,6 @@ exports.createTicket = async (req,res)=>{
             title : req.body.title,
             ticketPriority : req.body.ticketPriority,
             description : req.body.description,
-            status : req.body.status,
             reporter : req.user.userId
         }
     
@@ -25,17 +25,23 @@ exports.createTicket = async (req,res)=>{
         if(ticketCreated){
             const customer = req.user;
 
-            customer.ticketsCreated.push(ticketCreated._id);
             customer.openTicketsCreated.push(ticketCreated._id);
             await customer.save();
 
             if(engineer){
-                engineer.ticketsAssigned.push(ticketCreated._id);
                 engineer.openTicketsAssigned.push(ticketCreated._id);
-                await engineer.save()
+                await engineer.save();
             }
+
+            sendNotificationReq(
+                `New ticket created with id ${ticketCreated._id}`, 
+                `Ticket title is ${ticketCreated.title}`, 
+                `dharmitmailer+crmadmin@gmail.com, ${customer.email}, ${engineer.email}`, 
+                "CRM app"
+            );
+            
             console.log(`#### New ticket '${ticketCreated.title}' created by ${customer.name} ####`);
-            res.status(201).send(ticketCreated)
+            res.status(201).send(ticketCreated);
         }
 
 
@@ -43,7 +49,7 @@ exports.createTicket = async (req,res)=>{
         console.log("#### Error while creating new ticket #### ", err);
         res.status(500).send({
             message : "Internal server error while creating new ticket"
-        })
+        });
     }
 }
 
@@ -67,6 +73,7 @@ exports.getAllTickets = async (req,res)=>{
                 queryObj["_id"] = {$in : req.user.closedTicketsCreated};
 
             } else{
+                req.user.ticketsCreated = req.user.openTicketsCreated.concat(req.user.closedTicketsCreated);
                 queryObj["_id"] = {$in : req.user.ticketsCreated};
             }
 
@@ -80,6 +87,8 @@ exports.getAllTickets = async (req,res)=>{
                 queryObj["$or"] = [{"_id" : {$in : req.user.closedTicketsCreated}},{"_id" : {$in : req.user.closedTicketsAssigned}}]
 
             } else{
+                req.user.ticketsCreated = req.user.openTicketsCreated.concat(req.user.closedTicketsCreated);
+                req.user.ticketsAssigned = req.user.openTicketsAssigned.concat(req.user.closedTicketsAssigned);
                 queryObj["$or"] = [{"_id" : {$in : req.user.ticketsCreated}},{"_id" : {$in : req.user.ticketsAssigned}}]
             }
 
@@ -94,7 +103,7 @@ exports.getAllTickets = async (req,res)=>{
         console.log("#### Error while getting tickets #### ", err.message);
         res.status(500).send({
             message : "Internal server error while getting tickets"
-        })
+        });
     }
 }
 
@@ -143,9 +152,6 @@ exports.updateTicket = async (req,res)=>{
             ticket.assignee = req.body.assignee;
             const newAssignee = req.newAssignee;
 
-            ticketAssignee.ticketsAssigned.remove(ticket._id);
-            newAssignee.ticketsAssigned.push(ticket._id);
-
             ticketAssignee.openTicketsAssigned.remove(ticket._id);
             newAssignee.openTicketsAssigned.push(ticket._id);
 
@@ -161,6 +167,6 @@ exports.updateTicket = async (req,res)=>{
         console.log("#### Error while updating ticket #### ", err);
         res.status(500).send({
             message : "Internal error while updating the ticket"
-        })
+        });
     }
 }
