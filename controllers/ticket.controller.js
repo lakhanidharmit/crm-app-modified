@@ -34,7 +34,7 @@ exports.createTicket = async (req,res)=>{
             }
 
             sendNotificationReq(    //sending email notification to all stakeholders
-                `New ticket created with id ${ticketCreated._id}`, 
+                `New ticket created by ${customer.userType} ${customer.name}`, 
                 `Ticket title is ${ticketCreated.title}`, 
                 `dharmitmailer+crmadmin@gmail.com, ${customer.email}, ${engineer.email}`, 
                 "CRM app"

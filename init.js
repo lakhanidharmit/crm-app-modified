@@ -5,10 +5,10 @@ const constants = require('./utils/constants')
 
 module.exports = async ()=>{
     try{
-        await User.collection.drop();
-        console.log("#### User collection dropped ####");
-        await Ticket.collection.drop();
-        console.log("#### Ticket collection dropped ####");
+        // await User.collection.drop();
+        // console.log("#### User collection dropped ####");
+        // await Ticket.collection.drop();
+        // console.log("#### Ticket collection dropped ####");
 
         const user = await User.findOne({userId : "admin"})
 

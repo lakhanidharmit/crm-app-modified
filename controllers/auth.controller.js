@@ -72,7 +72,7 @@ exports.signin = async (req,res)=>{
             });
         }
 
-        const token = jwt.sign({id: user.userId}, authConfig.secret, {expiresIn : precess.env.JWT_Time}); // expiery time is 24 hours. written in seconds
+        const token = jwt.sign({id: user.userId}, authConfig.secret, {expiresIn : process.env.JWT_TIME}); // expiery time is 24 hours.
         console.log(`#### ${user.userType} ${user.name} logged in ####`);
 
         res.status(200).send({

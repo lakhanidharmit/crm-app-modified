@@ -47,6 +47,15 @@ const isValidOwnerOfTheTicket = async (req,res,next) =>{
         })
     }
 
+    if (req.body.status && req.body.status != ticket.status){
+        if(req.body.status != constants.ticketStatus.open && req.body.status != constants.ticketStatus.closed && req.body.status != constants.ticketStatus.blocked){
+            return res.status(403).send({
+                message : "Ticket status passed is not valid"
+            });
+        }
+    }
+
+
     if (req.body.assignee && req.body.assignee != ticket.assignee){    //if assignee is present and not same
 
         if(user.userType != constants.userType.admin){      //if user is not admin
@@ -60,6 +69,16 @@ const isValidOwnerOfTheTicket = async (req,res,next) =>{
             if(!engineer){
                 return res.status(401).send({
                     message : "Engineer userId passed as assignee is wrong"
+                });
+            }
+            if(engineer.userType != constants.userType.engineer){
+                return res.status(401).send({
+                    message : "UserId passed as assignee is not an engineer"
+                });
+            }
+            if(engineer.userStatus != constants.userStatus.approved){
+                return res.status(401).send({
+                    message : "Engineer is not approved yet"
                 });
             }
             req.newAssignee = engineer
