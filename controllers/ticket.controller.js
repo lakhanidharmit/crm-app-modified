@@ -12,9 +12,9 @@ exports.createTicket = async (req,res)=>{
             reporter : req.user.userId
         }
     
-        const engineerarray = req.availableEngineers
+        const engineerarray = req.availableEngineers    // array of approved engineers received from middlewere
 
-        const engineer = engineerarray.sort((a,b)=>a.openTicketsAssigned.length - b.openTicketsAssigned.length)[0]
+        const engineer = engineerarray.sort((a,b)=>a.openTicketsAssigned.length - b.openTicketsAssigned.length)[0] // sorting them and selecting one with least OPEN tickets
 
     
         if(engineer){
@@ -23,7 +23,7 @@ exports.createTicket = async (req,res)=>{
 
         const ticketCreated = await Ticket.create(ticketObj);
         if(ticketCreated){
-            const customer = req.user;
+            const customer = req.user;  // got user from JWT userID in middlewere
 
             customer.openTicketsCreated.push(ticketCreated._id);
             await customer.save();
@@ -33,7 +33,7 @@ exports.createTicket = async (req,res)=>{
                 await engineer.save();
             }
 
-            sendNotificationReq(
+            sendNotificationReq(    //sending email notification to all stakeholders
                 `New ticket created with id ${ticketCreated._id}`, 
                 `Ticket title is ${ticketCreated.title}`, 
                 `dharmitmailer+crmadmin@gmail.com, ${customer.email}, ${engineer.email}`, 
@@ -43,7 +43,6 @@ exports.createTicket = async (req,res)=>{
             console.log(`#### New ticket '${ticketCreated.title}' created by ${customer.name} ####`);
             res.status(201).send(ticketCreated);
         }
-
 
     }catch(err){
         console.log("#### Error while creating new ticket #### ", err);
@@ -66,13 +65,13 @@ exports.getAllTickets = async (req,res)=>{
                 });
             }
 
-            if(req.query.status == constants.ticketStatus.open){
+            if(req.query.status == constants.ticketStatus.open){    //if query params is set to open
                 queryObj["_id"] = {$in : req.user.openTicketsCreated};
 
-            } else if(req.query.status == constants.ticketStatus.closed){
+            } else if(req.query.status == constants.ticketStatus.closed){   //if query params is set to closed
                 queryObj["_id"] = {$in : req.user.closedTicketsCreated};
 
-            } else{
+            } else{     //if no query params are provided
                 req.user.ticketsCreated = req.user.openTicketsCreated.concat(req.user.closedTicketsCreated);
                 queryObj["_id"] = {$in : req.user.ticketsCreated};
             }
@@ -80,18 +79,17 @@ exports.getAllTickets = async (req,res)=>{
 
         }else if(req.user.userType == constants.userType.engineer){
 
-            if(req.query.status == constants.ticketStatus.open){
+            if(req.query.status == constants.ticketStatus.open){    //if query params is set to open
                 queryObj["$or"] = [{"_id" : {$in : req.user.openTicketsCreated}},{"_id" : {$in : req.user.openTicketsAssigned}}]
 
-            } else if(req.query.status == constants.ticketStatus.closed){
+            } else if(req.query.status == constants.ticketStatus.closed){   //if query params is set to closed
                 queryObj["$or"] = [{"_id" : {$in : req.user.closedTicketsCreated}},{"_id" : {$in : req.user.closedTicketsAssigned}}]
 
-            } else{
+            } else{     //if no query params are provided concat both open and close tickets
                 req.user.ticketsCreated = req.user.openTicketsCreated.concat(req.user.closedTicketsCreated);
                 req.user.ticketsAssigned = req.user.openTicketsAssigned.concat(req.user.closedTicketsAssigned);
                 queryObj["$or"] = [{"_id" : {$in : req.user.ticketsCreated}},{"_id" : {$in : req.user.ticketsAssigned}}]
             }
-
 
         }
     
@@ -113,27 +111,27 @@ exports.updateTicket = async (req,res)=>{
         const ticketReporter = await User.findOne({userId : ticket.reporter});
         const ticketAssignee = await User.findOne({userId : ticket.assignee});
     
-        ticket.title = req.body.title != undefined? req.body.title : ticket.title;
-        ticket.description = req.body.description != undefined? req.body.description : ticket.description;
-        ticket.ticketPriority = req.body.ticketPriority != undefined? req.body.ticketPriority : ticket.ticketPriority;
+        ticket.title = req.body.title? req.body.title : ticket.title;
+        ticket.description = req.body.description? req.body.description : ticket.description;
+        ticket.ticketPriority = req.body.ticketPriority? req.body.ticketPriority : ticket.ticketPriority;
 
-        if (req.body.status != undefined && ticket.status != req.body.status){
+        if (req.body.status && ticket.status != req.body.status){  //if status is non-empty and diffrent
            
             const currentTicketStatus = ticket.status;
             ticket.status = req.body.status;
 
-            if (currentTicketStatus == constants.ticketStatus.open){
+            if (currentTicketStatus == constants.ticketStatus.open){    //if ticket is open and to be closed
 
-                ticketReporter.openTicketsCreated.remove(ticket._id);
+                ticketReporter.openTicketsCreated.remove(ticket._id);   //change status in reporter document in DB
                 ticketReporter.closedTicketsCreated.push(ticket._id);
 
-                ticketAssignee.openTicketsAssigned.remove(ticket._id);
-                ticketAssignee.closedTicketsAssigned.push(ticket._id)
+                ticketAssignee.openTicketsAssigned.remove(ticket._id);  //change status in reporter document in DB
+                ticketAssignee.closedTicketsAssigned.push(ticket._id);
 
-                await ticketReporter.save();
+                await ticketReporter.save();        //save changes
                 await ticketAssignee.save();
 
-            } else {
+            } else {            //if ticket is closed and to be reopened
 
                 ticketReporter.closedTicketsCreated.remove(ticket._id);
                 ticketReporter.openTicketsCreated.push(ticket._id);
@@ -147,13 +145,13 @@ exports.updateTicket = async (req,res)=>{
             }
         }
 
-        if (req.body.assignee != undefined && ticket.assignee != req.body.assignee){
+        if (req.body.assignee && ticket.assignee != req.body.assignee){    //if asignee is non-empty and diffrent
 
             ticket.assignee = req.body.assignee;
             const newAssignee = req.newAssignee;
 
-            ticketAssignee.openTicketsAssigned.remove(ticket._id);
-            newAssignee.openTicketsAssigned.push(ticket._id);
+            ticketAssignee.openTicketsAssigned.remove(ticket._id);  //remove ticket from current assignee document
+            newAssignee.openTicketsAssigned.push(ticket._id);       //add ticket to new assignee document
 
             await ticketAssignee.save();
             await newAssignee.save();
@@ -161,6 +159,16 @@ exports.updateTicket = async (req,res)=>{
         }
     
         const updatedTicket = await ticket.save();
+
+        console.log(`Ticker ${updatedTicket._id} updated by ${req.user.userType} ${req.user.name}`);
+
+        sendNotificationReq(    //sending email notification to all stakeholders
+        `Ticket id: ${updatedTicket._id} updated`, 
+        `Ticket title is ${updatedTicket.title}`, 
+        `dharmitmailer+crmadmin@gmail.com, ${ticketReporter.email}, ${ticketAssignee.email}`, 
+        "CRM app"
+        );
+
         res.status(200).send(updatedTicket);
 
     }catch(err){

@@ -5,6 +5,7 @@ const constants = require('../utils/constants')
 
 
 const verifyToken = (req,res,next)=>{
+
     const token = req.headers["x-access-token"];
 
     if(!token){
@@ -20,15 +21,16 @@ const verifyToken = (req,res,next)=>{
             })
         }
         const user = await User.findOne({userId : decoded.id});
-        req.user = user;
+        req.user = user;        //saving user data in req
         next();
     })
 }
 
 const isAdmin = (req,res,next)=>{
+
     const user = req.user
+
     if (user && user.userType == constants.userType.admin){
-        req.user.isAdmin = true;
         next();
     }else{
         return res.status(403).send({
@@ -38,14 +40,19 @@ const isAdmin = (req,res,next)=>{
 }
 
 const isValidUserIdInReqParam = async (req,res,next)=>{
+
     try{
+
         const user = await User.find({userId : req.params.Id});
+
         if(!user){
             return res.status(400).send({
                 message : "userId passed dosen't exist"
             })
         }
+        req.userInParams = user;    //saves params user in req for later use
         next();
+        
     }catch(err){
         console.log("#### Error while reading the user info #### ", err.message);
         return res.status(500).send({
@@ -55,13 +62,16 @@ const isValidUserIdInReqParam = async (req,res,next)=>{
 }
 
 const isAdminOrOwner = (req,res,next)=>{
+
     try {
-        const callingUser = req.user;
-        if(callingUser.userType == constants.userType.admin){
-            req.user.isAdmin = true;
+
+        if(req.user.userType == constants.userType.admin){
+            req.user.isAdmin = true;        // adds isAdmin tag for further use in controller
             next();
-        }else if(callingUser.userId == req.params.userId){
+
+        }else if(req.user.userId == req.params.userId){
             next();
+            
         }else{
             return res.send(403).send({
                 message : "Only admin or owner is allowed to make this call"

@@ -15,13 +15,13 @@ exports.signup = async (req,res)=>{
         email : req.body.email,
         userType : req.body.userType,
         password : bcrypt.hashSync(req.body.password, 8),
-        userStatus : constants.userStatus.pending
+        userStatus : constants.userStatus.pending // every user's status will be pending until they can verify account
     };
 
     try{
-        const userCreated = await User.create(userObj);
+        const userCreated = await User.create(userObj); //creating user
         
-        sendVerificationEmail(userCreated);
+        sendVerificationEmail(userCreated); //sending verification link to email-id
 
         const response = {
             name : userCreated.name,
@@ -62,7 +62,7 @@ exports.signin = async (req,res)=>{
         if(user.userStatus == constants.userStatus.pending){
             return res.status(400).send({
                 message : "User is not yet approved from the admin"
-            })
+            });
         }
 
         const passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
@@ -72,7 +72,7 @@ exports.signin = async (req,res)=>{
             });
         }
 
-        const token = jwt.sign({id: user.userId}, authConfig.secret, {expiresIn : 86400}); // 24 hours
+        const token = jwt.sign({id: user.userId}, authConfig.secret, {expiresIn : precess.env.JWT_Time}); // expiery time is 24 hours. written in seconds
         console.log(`#### ${user.userType} ${user.name} logged in ####`);
 
         res.status(200).send({
@@ -91,21 +91,44 @@ exports.signin = async (req,res)=>{
     }
 }
 
-exports.verifyUserEmail = async (req,res)=>{
+exports.verifyUserEmail = (req,res)=>{ //controller to verify user account. the check for link is already done in middlewere
     try{
-        if(req.user.userType==constants.userType.customer){
-            req.user.userStatus = constants.userStatus.approved;
-        }
         req.user.emailVerified = true;
-        req.user.save()
+        if(req.user.userType==constants.userType.customer){
+            req.user.userStatus = constants.userStatus.approved; //customer is autometically approved on verification
+        }
+        req.user.save();
         console.log(`#### ${req.user.userType} ${req.user.name} is verified ####`);
         res.status(200).send({
             message : "Email verification successful;"
-        })
-}catch(err){
+        });
+    }catch(err){
         console.log("#### Error while verifying user email ##### ", err.message);
         res.status(500).send({
             message : "Internal server error while email verification"
+        });
+    }
+}
+
+exports.resendVerificationEmail = (req,res)=>{
+    const user = req.userInParams[0];
+    if(user.emailVerified){
+        return res.status(401).send({
+            message : "The user is already verified"
+        })
+    }
+
+    try{
+
+        sendVerificationEmail(user);
+        return res.status(201).send({
+            message : "Verification email resent"
+        });
+
+    }catch(err){
+        console.log("#### Error while resending verification email ##### ", err.message);
+        res.status(500).send({
+            message : "Internal server error while resending verification email"
         });
     }
 }

@@ -1,18 +1,19 @@
 const User = require('../models/user.model')
 const objectConverter = require('../utils/objectConverter')
+const bcrypt = require('bcryptjs');
 
 exports.findAll = async (req,res)=>{
 
     const queryObj = {};
     const userTypeQP = req.query.userType;
     const userStatusQP = req.query.userStatus;
-    if(userTypeQP){
+
+    if(userTypeQP){                    //if query params exists
         queryObj.userType = userTypeQP
     }
     if(userStatusQP){
         queryObj.userStatus = userStatusQP
     }
-
 
     try{
         const users = await User.find(queryObj);
@@ -27,10 +28,11 @@ exports.findAll = async (req,res)=>{
     }
 }
 
-exports.findByUserId = async(req,res)=>{
+exports.findByUserId = (req,res)=>{
     try{
-        const user = await User.find({userId : req.params.Id});
-        res.status(200).send(objectConverter.userResponse(user));
+        
+        res.status(200).send(objectConverter.userResponse(req.userInParams));   //got from middlewere
+
     }catch(err){
         console.log("#### Error while searching for the user #### ", err.message);
         res.status(500).send({
@@ -41,13 +43,20 @@ exports.findByUserId = async(req,res)=>{
 
 exports.update = async(req,res)=>{
     try{
+
         const user = await User.findOne({userId : req.params.Id})
-        user.name = req.body.name != undefined ? req.body.name : user.name
-        if(req.user.isAdmin){
+
+        user.name = req.body.name ? req.body.name : user.name
+        user.password = req.body.password ? bcrypt.hashSync(req.body.password, 8) : user.password
+
+        if(req.user.isAdmin){       //only admin can change these properties. got property from middlewere
             user.userStatus = req.body.userStatus != undefined ? req.body.userStatus : user.userStatus
             user.userType = req.body.userType != undefined ? req.body.userType : user.userType
         }
+
         const updatedUser = await user.save();
+
+
         console.log(`#### ${updatedUser.userType} ${updatedUser.name} data updated ####`);
         res.status(200).send({
             name : updatedUser.name,
@@ -55,7 +64,8 @@ exports.update = async(req,res)=>{
             email : updatedUser.email,
             userTypes : updatedUser.userType,
             userStatus : updatedUser.userStatus
-        })
+        });
+
     }catch(err){
         console.log("#### Error while updating user data #### ", err.message);
         res.status(500).send({
