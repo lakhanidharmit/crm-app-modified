@@ -3,29 +3,6 @@ const authConfig = require('../configs/auth.config')
 const User = require('../models/user.model')
 const constants = require('../utils/constants')
 
-
-const verifyToken = (req,res,next)=>{
-
-    const token = req.headers["x-access-token"];
-
-    if(!token){
-        return res.status(403).send({
-            message : "no token provided! Access prohibited"
-        })
-    }
-
-    jwt.verify(token, authConfig.secret, async (err, decoded)=>{
-        if(err){
-            return res.status(401).send({
-                message : "UnAuthorised!"
-            })
-        }
-        const user = await User.findOne({userId : decoded.id});
-        req.user = user;        //saving user data in req
-        next();
-    })
-}
-
 const isAdmin = (req,res,next)=>{
 
     const user = req.user
@@ -43,7 +20,7 @@ const isValidUserIdInReqParam = async (req,res,next)=>{
 
     try{
 
-        const user = await User.find({userId : req.params.Id});
+        const user = await User.find({userId : req.params.id});
 
         if(!user){
             return res.status(400).send({
@@ -69,11 +46,11 @@ const isAdminOrOwner = (req,res,next)=>{
             req.user.isAdmin = true;        // adds isAdmin tag for further use in controller
             next();
 
-        }else if(req.user.userId == req.params.userId){
+        }else if(req.user.userId == req.params.id){
             next();
             
         }else{
-            return res.send(403).send({
+            return res.status(403).send({
                 message : "Only admin or owner is allowed to make this call"
             })
         }
@@ -87,10 +64,9 @@ const isAdminOrOwner = (req,res,next)=>{
 }
 
 const authJwt = {
-    verifyToken : verifyToken,
-    isAdmin : isAdmin,
-    isValidUserIdInReqParam : isValidUserIdInReqParam,
-    isAdminOrOwner : isAdminOrOwner
+    isAdmin,
+    isValidUserIdInReqParam,
+    isAdminOrOwner
 }
 
 module.exports = authJwt

@@ -1,7 +1,7 @@
 const User = require('../models/user.model')
 const Ticket = require('../models/ticket.model')
 const constants = require("../utils/constants")
-const sendNotificationReq = require('../utils/notificationClient')
+const sendNotificationReq = require('../utils/sendEmailRequest')
 
 exports.createTicket = async (req,res)=>{
     try{
@@ -33,12 +33,7 @@ exports.createTicket = async (req,res)=>{
                 await engineer.save();
             }
 
-            sendNotificationReq(    //sending email notification to all stakeholders
-                `New ticket created by ${customer.userType} ${customer.name}`, 
-                `Ticket title is ${ticketCreated.title}`, 
-                `dharmitmailer+crmadmin@gmail.com, ${customer.email}, ${engineer.email}`, 
-                "CRM app"
-            );
+            sendNotificationReq.ticketCreated(ticketCreated, customer, engineer)
             
             console.log(`#### New ticket '${ticketCreated.title}' created by ${customer.name} ####`);
             res.status(201).send(ticketCreated);
@@ -156,18 +151,15 @@ exports.updateTicket = async (req,res)=>{
             await ticketAssignee.save();
             await newAssignee.save();
 
+            ticketAssignee = newAssignee;
+
         }
     
         const updatedTicket = await ticket.save();
 
         console.log(`Ticker ${updatedTicket._id} updated by ${req.user.userType} ${req.user.name}`);
 
-        sendNotificationReq(    //sending email notification to all stakeholders
-        `Ticket id: ${updatedTicket._id} updated`, 
-        `Ticket title is ${updatedTicket.title}`, 
-        `dharmitmailer+crmadmin@gmail.com, ${ticketReporter.email}, ${ticketAssignee.email}`, 
-        "CRM app"
-        );
+        sendNotificationReq.ticketUpdated(updatedTicket, ticketReporter, ticketAssignee);
 
         res.status(200).send(updatedTicket);
 

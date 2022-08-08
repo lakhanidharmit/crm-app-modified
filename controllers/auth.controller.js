@@ -4,7 +4,7 @@ const User = require('../models/user.model')
 const jwt = require('jsonwebtoken');
 const authConfig = require('../configs/auth.config');
 const constants = require('../utils/constants');
-const sendVerificationEmail = require('../utils/sendVerificationEmail')
+const sendVerificationEmail = require('../utils/sendEmailRequest')
 
 
 exports.signup = async (req,res)=>{
@@ -21,7 +21,7 @@ exports.signup = async (req,res)=>{
     try{
         const userCreated = await User.create(userObj); //creating user
         
-        sendVerificationEmail(userCreated); //sending verification link to email-id
+        sendVerificationEmail.accountVerification(userCreated); //sending verification link to email-id
 
         const response = {
             name : userCreated.name,
@@ -47,7 +47,7 @@ exports.signup = async (req,res)=>{
 exports.signin = async (req,res)=>{
     try{
         const user = await User.findOne({userId : req.body.userId})
-        if(user == null){
+        if(!user){
             return res.status(400).send({
                 message : "Failed! userId passed dosen't exist"
             });
@@ -72,7 +72,7 @@ exports.signin = async (req,res)=>{
             });
         }
 
-        const token = jwt.sign({id: user.userId}, authConfig.secret, {expiresIn : process.env.JWT_TIME}); // expiery time is 24 hours.
+        const token = jwt.sign({id: user.userId, purpose: "authentication"}, authConfig.secret, {expiresIn : process.env.JWT_TIME}); // expiery time is 24 hours.
         console.log(`#### ${user.userType} ${user.name} logged in ####`);
 
         res.status(200).send({
@@ -120,7 +120,7 @@ exports.resendVerificationEmail = (req,res)=>{
 
     try{
 
-        sendVerificationEmail(user);
+        sendVerificationEmail.accountVerification(user);
         return res.status(201).send({
             message : "Verification email resent"
         });

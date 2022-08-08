@@ -2,36 +2,6 @@ const User = require("../models/user.model")
 const Ticket = require('../models/ticket.model')
 const constants = require('../utils/constants')
 
-const validateNewTicketBody = async (req,res,next)=>{
-
-    if (!req.body.title) {
-        return res.status(400).send({
-            message: "Failed ! Ticket title is not provided"
-        });
-    }
-
-    if (!req.body.description) {
-        return res.status(400).send({
-            message: "Failed ! Ticket description is not provided"
-        });
-    }
-
-    const availableEngineers = await User.find({    //finds all approved engineers
-        userType : constants.userType.engineer,
-        userStatus : constants.userStatus.approved
-    });
-
-    if(!availableEngineers){
-        return res.status(400).send({
-            message: "No engineer is available. Please try later"
-        });
-    }
-
-    req.availableEngineers = availableEngineers;    //adds that array to req for use in controller
-
-    next();
-}
-
 const isValidOwnerOfTheTicket = async (req,res,next) =>{
 
     const user = req.user;  //got from authJwt middlewere
@@ -94,8 +64,7 @@ const isValidOwnerOfTheTicket = async (req,res,next) =>{
 
 
 const verifyTicket = {
-    validateNewTicketBody : validateNewTicketBody,
-    isValidOwnerOfTheTicket : isValidOwnerOfTheTicket
+    isValidOwnerOfTheTicket
 };
 
 module.exports = verifyTicket;

@@ -1,6 +1,7 @@
 const User = require('../models/user.model')
 const objectConverter = require('../utils/objectConverter')
 const bcrypt = require('bcryptjs');
+const sendEmail = require('../utils/sendEmailRequest')
 
 exports.findAll = async (req,res)=>{
 
@@ -41,10 +42,10 @@ exports.findByUserId = (req,res)=>{
     }
 }
 
-exports.update = async(req,res)=>{
+exports.updateUser = async (req,res)=>{
     try{
 
-        const user = await User.findOne({userId : req.params.Id})
+        const user = req.userInParams[0];
 
         user.name = req.body.name ? req.body.name : user.name
         user.password = req.body.password ? bcrypt.hashSync(req.body.password, 8) : user.password
@@ -70,6 +71,37 @@ exports.update = async(req,res)=>{
         console.log("#### Error while updating user data #### ", err.message);
         res.status(500).send({
             message : "Internal server error while updating user data"
-        })
+        });
+    }
+}
+
+exports.sendPasswordResetLink = (req,res)=>{
+    try{
+        const user = req.userInParams[0];
+        sendEmail.resetPassword(user);
+        return res.status(201).send({
+            message : "Password reset link sent in Email"
+        });
+
+    }catch(err){
+        console.log("#### Error while sending password reset email ##### ", err);
+        res.status(500).send({
+            message : "Internal server error while sending password reset email"
+        });
+    }
+}
+
+exports.resetPassword = async (req,res)=>{
+    try{
+        const user = req.user;
+        user.password = req.body.password ? bcrypt.hashSync(req.body.password, 8) : user.password
+        await user.save();
+        console.log(`#### ${user.userType} ${user.name} password updated using link`);
+        res.status(200).send({message : "password updated"});
+    }catch(err){
+        console.log("#### Error while updating user password using link #### ", err.message);
+        res.status(500).send({
+            message : "Internal server error while updating user password"
+        });
     }
 }

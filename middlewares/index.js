@@ -1,9 +1,11 @@
-const verifySignUp = require('./verifySignUp')
+const verifyBody = require('./verifyRequestBody')
 const authJwt = require('./authjwt')
 const verifyTicket = require('./ticketValidator')
+const verifyTokens = require('./tokenValidator')
 
 module.exports = {
-    verifySignUp,
+    verifyBody,
     authJwt,
-    verifyTicket
+    verifyTicket,
+    verifyTokens
 }
