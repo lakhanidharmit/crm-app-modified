@@ -38,7 +38,7 @@ This project is node.js back-end code for a customer relationship management app
 
 ## REST API paths
 
->User creation
+>**User creation**
 
 - **Sign-up**<br/>
 `POST /crm/api/v2/auth/signup`<br/>
@@ -56,7 +56,7 @@ Account verification by using the link provided to the registered email address.
 `GET /crm/api/v2/auth/resendverificationemail/:token`<br/>
 Resend the verificaion link to email in case the link is not received or has expired.<br/><br/>
 
->User operations
+>**User operations**
 
 - **Get all users (Query params userType and userStatus supported)**<br/>
 `GET /crm/api/v2/users`<br/>
@@ -78,7 +78,7 @@ User can get an email link to reset their forgotten password.<br/><br/>
 `PUT /crm/api/v2/users/resetpassword/:token`<br/>
 Updating user password by using the link provided to the registered email address.<br/><br/>
 
->Ticket creation and operations
+>**Ticket creation and operations**
 
 - **Create new ticket**<br/>
 `POST /crm/api/v2/tickets/`<br/>
