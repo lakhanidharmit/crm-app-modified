@@ -1,7 +1,7 @@
 {
   "name": "crm-app-modified",
   "version": "2.0.0",
-  "description": "modified version of CRM app from relevel",
+  "description": "modified version of CRM app from relevel| Amazing effort ",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
